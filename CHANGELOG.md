@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-07-04
+
+### Added
+- **`get_email_source`** — new tool exposing an email's raw RFC 822 source
+  (full headers + MIME body) for debugging threading, authentication results,
+  and encoding issues (#66). Supports a `headers_only` mode and a configurable
+  byte cap with an explicit truncation marker so huge messages can't flood the
+  context. Uses Mail's `message id` property and resolves localized inbox
+  names via `build_mailbox_ref`.
+- **`list_inbox_emails` now surfaces `message_id`, `internet_message_id` and a
+  `mail_link`** in both its JSON and text output, matching `search_emails`
+  (#76) — inbox listings can be cited as Apple Mail deep links
+  (`message://…`) and targeted by id without a second lookup.
+  Backward-compatible with older 5-field records.
+
+### Fixed
+- **Stored XSS in the inbox dashboard** (#77). Attacker-controlled email
+  subjects/senders containing `</script>` could break out of the dashboard's
+  embedded JSON `<script>` block and inject arbitrary HTML. JSON injected into
+  the template now escapes `<`, `>`, `&`, and U+2028/U+2029; remaining
+  unescaped template interpolations in the account cards were also fixed.
+- **Umlauts, ß, and emoji no longer garble when pasting HTML bodies into
+  Mail** (#79). The Cocoa HTML→RTF importer auto-detected the charset and
+  defaulted to Latin-1, double-decoding UTF-8 bytes into mojibake
+  ("Grüße" → "GrÃ¼ÃŸe") on both the plain and HTML compose paths. The
+  importer is now pinned to UTF-8 via `NSCharacterEncodingDocumentAttribute`.
+
 ## [3.1.8] - 2026-06-23
 
 ### Fixed
@@ -21,11 +48,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (it already builds a proper multipart/alternative `.eml`).
 
 ### Added
-- **`list_inbox_emails` now surfaces `message_id`, `internet_message_id` and a
-  `mail_link`** in both its JSON and text output, matching `search_emails` (and the
-  text deep link added for search in #44) — inbox listings can be cited as Apple
-  Mail deep links (`message://…`) and targeted by id without a second lookup.
-  Backward-compatible with older 5-field records.
 - **Release workflow now builds and attaches the `.mcpb` bundle** to the GitHub
   Release automatically on each tag (verifies the bundle contains the
   `apple_mail_mcp` package and doesn't leak `venv/`/`__pycache__`).
